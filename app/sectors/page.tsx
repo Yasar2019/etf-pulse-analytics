@@ -1,0 +1,5 @@
+import AppShell from "@/components/AppShell";
+import SectionHeader from "@/components/SectionHeader";
+import ETFTable from "@/components/ETFTable";
+import { etfs, sectors } from "@/lib/demoData";
+export default function SectorsPage(){return <AppShell><SectionHeader eyebrow="SECTOR INTELLIGENCE" title="Follow momentum across the market." description="A visual ranking of sector performance, capital flows and ETF exposure."/><section className="sectorCards">{sectors.map((s,i)=><article className="sectorCard" key={s.name}><span>#{i+1}</span><h3>{s.name}</h3><strong>+{s.returnPct}%</strong><small>YTD return</small><div className="miniTrack"><i style={{width:`${s.score}%`}}/></div><div className="sectorStats"><span>30D Flow <b>{s.flow>=0?"+":""}${s.flow}B</b></span><span>Momentum <b>{s.score}/100</b></span></div></article>)}</section><section className="panel explorerPanel"><div className="panelHeader"><div><span className="eyebrow">SECTOR FUNDS</span><h2>Featured exposure</h2></div></div><ETFTable rows={etfs.filter(e=>["Technology","Financials"].includes(e.sector))}/></section></AppShell>}
