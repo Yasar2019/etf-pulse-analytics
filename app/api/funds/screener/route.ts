@@ -5,11 +5,13 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("q") ?? undefined;
   const sort = searchParams.get("sort") ?? undefined;
+  const dirParam = searchParams.get("dir");
+  const sortDir = dirParam === "asc" ? "asc" : "desc";
   const category = searchParams.get("category") ?? undefined;
   const limit = Math.min(Number(searchParams.get("limit") ?? 50) || 50, 100);
 
   try {
-    const result = await screenBusinessQuantFunds({ search, sort, category, limit });
+    const result = await screenBusinessQuantFunds({ search, sort, sortDir, category, limit });
     if (!result) return NextResponse.json({ mode: "demo", reason: "BUSINESSQUANT_API_KEY not configured", rows: [] });
     return NextResponse.json({ mode: "live", ...result });
   } catch (error) {
