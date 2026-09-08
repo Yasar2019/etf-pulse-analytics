@@ -7,6 +7,7 @@ import { ReactNode } from "react";
 const nav = [
   ["Overview", "/", "⌁"],
   ["ETF Explorer", "/explore", "◫"],
+  ["Portfolio", "/portfolio", "◉"],
   ["Sectors", "/sectors", "◈"],
   ["Compare", "/compare", "⇄"],
   ["Watchlist", "/watchlist", "☆"],
