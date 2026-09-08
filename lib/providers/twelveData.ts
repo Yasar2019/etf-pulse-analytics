@@ -1,6 +1,7 @@
 import { ETF } from "../types";
 import { etfs } from "../demoData";
 import { SeriesPoint } from "../analytics";
+import { getBusinessQuantETFStub } from "./businessQuantPortfolio";
 import type { ETFDataProvider, ProviderStatus, QuoteSnapshot, PerformanceStats } from "../provider";
 
 const BASE_URL = "https://api.twelvedata.com";
@@ -35,7 +36,14 @@ export class TwelveDataProvider implements ETFDataProvider {
   }
 
   async getETF(symbol: string): Promise<ETF | null> {
-    return etfs.find((etf) => etf.symbol === symbol.toUpperCase()) ?? null;
+    const upper = symbol.toUpperCase();
+    const curated = etfs.find((etf) => etf.symbol === upper);
+    if (curated) return curated;
+    try {
+      return await getBusinessQuantETFStub(upper);
+    } catch {
+      return null;
+    }
   }
 
   async getQuote(symbol: string): Promise<QuoteSnapshot> {
@@ -121,7 +129,7 @@ export class TwelveDataProvider implements ETFDataProvider {
     const mean = dailyReturns.reduce((sum, value) => sum + value, 0) / dailyReturns.length;
     const variance = dailyReturns.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / Math.max(1, dailyReturns.length - 1);
     const annualizedVolatility = Math.sqrt(variance) * Math.sqrt(252) * 100;
-    const risk: PerformanceStats["risk"] = annualizedVolatility < 12 ? "Low" : annualizedVolatility < 22 ? "Medium" : "High";
+    const risk: PerformanceStats["risk"] = annualizedVolatility < 12 ? "Low" : annualizedVolatility < 22 ? "Moderate" : "High";
 
     return {
       ytdReturn: Number(ytdReturn.toFixed(2)),
