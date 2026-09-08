@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { screenBusinessQuantFunds } from "@/lib/providers/businessQuant";
+import { getCachedFundUniverse, queryCachedUniverse } from "@/lib/services/fundUniverse";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") ?? undefined;
   const dirParam = searchParams.get("dir");
   const sortDir = dirParam === "asc" ? "asc" : "desc";
-  const category = searchParams.get("category") ?? undefined;
   const limit = Math.min(Math.max(Number(searchParams.get("limit") ?? 100) || 100, 1), 500);
   const offset = Math.max(Number(searchParams.get("offset") ?? 0) || 0, 0);
 
@@ -22,18 +21,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await screenBusinessQuantFunds({ search, sort, sortDir, category, limit, offset });
-    if (!result) {
-      return NextResponse.json({ mode: "fallback", error: "BusinessQuant provider returned no response", rows: [], offset, limit });
+    const universe = await getCachedFundUniverse();
+    if (!universe) {
+      return NextResponse.json({ mode: "fallback", error: "BusinessQuant universe snapshot is unavailable", rows: [], offset, limit });
     }
-    return NextResponse.json({ mode: "live", ...result });
+
+    const result = queryCachedUniverse(universe, { search, sort, sortDir, offset, limit });
+    return NextResponse.json({
+      mode: "live",
+      ...result,
+      universeTotal: universe.providerUniverseTotal,
+      snapshotSize: universe.snapshotSize,
+      refreshedAt: universe.refreshedAt,
+      source: universe.source,
+    });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Screener unavailable";
+    const rateLimited = /429|rate limit/i.test(message);
     return NextResponse.json({
       mode: "fallback",
-      error: error instanceof Error ? error.message : "Screener unavailable",
+      reason: rateLimited ? "BusinessQuant daily quota exhausted before a cache snapshot was available" : undefined,
+      error: message,
       rows: [],
       offset,
       limit,
+      rateLimited,
     }, { status: 200 });
   }
 }
