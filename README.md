@@ -1,48 +1,49 @@
 # ETF Pulse Analytics
 
-A visual-first ETF intelligence platform inspired by the useful discovery primitives of ETF databases, redesigned for a younger and more modern audience.
+A modern, visual-first ETF intelligence platform for exploring funds by asset class, sector, theme, issuer and geography.
 
-## V0.2
+## V0.3
 
-- Overview command center
-- ETF screener/explorer
-- Sector intelligence page
+The current prototype includes:
+
+- Market command-center overview with ETF KPIs and ticker strip
+- ETF composite performance visualization and monthly fund-flow chart
+- Market Intelligence / Insights page with breadth, leadership and regime signals
+- ETF screener with search and classification filters
+- Sector momentum dashboard
 - Head-to-head ETF comparison
-- ETF detail pages with holdings + classification
-- Reusable ETF taxonomy: asset class, sector, theme, geography, issuer
-- Provider abstraction for replacing demo data with a licensed market/fund-data API
-- Responsive dark UI with custom CSS, no component-library lock-in
+- Dynamic ETF detail pages with holdings, ETF DNA, performance chart and readable fund signals
+- Responsive dark UI designed for newer retail investors without sacrificing analytical depth
+- Provider boundary (`ETFDataProvider`) ready to be connected to licensed production market data
 
 ## Routes
 
 - `/` — Market overview
 - `/explore` — ETF screener
-- `/sectors` — Sector rankings
+- `/sectors` — Sector intelligence
 - `/compare` — ETF comparison
-- `/etf/[symbol]` — ETF detail page
+- `/insights` — Market intelligence
+- `/etf/[symbol]` — ETF detail
 
-## Run locally
+## Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open http://localhost:3000.
+## Data status
 
-## Data
+All displayed market values are currently curated demo data. They are intentionally isolated behind the provider/data layer so a licensed live data source can replace them without redesigning the application.
 
-Current figures are illustrative demo data, intentionally isolated in `lib/demoData.ts`. Do not use them for investment decisions.
+## Next production milestones
 
-The `ETFDataProvider` contract in `lib/provider.ts` is the integration point for live providers.
+1. Licensed ETF metadata + quote provider
+2. Historical NAV / market-price time series
+3. Holdings and sector exposure ingestion
+4. Fund-flow history and rankings
+5. Persistence, caching and scheduled ingestion
+6. Watchlists and saved comparisons
+7. Authentication and deployment pipeline
 
-## Product roadmap
-
-1. Live ETF/fundamental data adapter
-2. Historical price + flow timeseries
-3. Advanced multi-dimensional screener
-4. Theme/geography/issuer dashboards
-5. Holdings overlap + stock exposure engine
-6. Portfolio analyzer
-7. Watchlists and alerts
-8. Authentication and saved views
+Not investment advice.
