@@ -1,7 +1,7 @@
 import { ETF } from "../types";
 import { etfs } from "../demoData";
 import { SeriesPoint } from "../analytics";
-import type { ETFDataProvider, ProviderStatus } from "../provider";
+import type { ETFDataProvider, ProviderStatus, QuoteSnapshot } from "../provider";
 
 const BASE_URL = "https://api.twelvedata.com";
 
@@ -9,6 +9,16 @@ type TwelveTimeSeriesResponse = {
   status?: string;
   message?: string;
   values?: Array<{ datetime: string; close: string }>;
+};
+
+type TwelveQuoteResponse = {
+  status?: string;
+  message?: string;
+  datetime?: string;
+  close?: string;
+  previous_close?: string;
+  change?: string;
+  percent_change?: string;
 };
 
 export class TwelveDataProvider implements ETFDataProvider {
@@ -19,13 +29,45 @@ export class TwelveDataProvider implements ETFDataProvider {
   }
 
   async listETFs(): Promise<ETF[]> {
-    // V0.4 keeps our curated taxonomy/metadata while live pricing is introduced.
-    // A dedicated fund-metadata feed can replace this method later without UI changes.
     return etfs;
   }
 
   async getETF(symbol: string): Promise<ETF | null> {
     return etfs.find((etf) => etf.symbol === symbol.toUpperCase()) ?? null;
+  }
+
+  async getQuote(symbol: string): Promise<QuoteSnapshot> {
+    const params = new URLSearchParams({
+      symbol: symbol.toUpperCase(),
+      apikey: this.apiKey,
+    });
+
+    const response = await fetch(`${BASE_URL}/quote?${params.toString()}`, {
+      next: { revalidate: 60 },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Twelve Data quote request failed with ${response.status}`);
+    }
+
+    const payload = (await response.json()) as TwelveQuoteResponse;
+    const price = Number(payload.close);
+    const change = Number(payload.change);
+    const percentChange = Number(payload.percent_change);
+    const previousClose = Number(payload.previous_close);
+
+    if (!Number.isFinite(price) || !Number.isFinite(percentChange)) {
+      throw new Error(payload.message || "No valid Twelve Data quote returned");
+    }
+
+    return {
+      price,
+      change: Number.isFinite(change) ? change : 0,
+      percentChange,
+      previousClose: Number.isFinite(previousClose) ? previousClose : undefined,
+      datetime: payload.datetime,
+      source: "twelve-data",
+    };
   }
 
   async getPerformanceHistory(symbol: string): Promise<SeriesPoint[]> {
@@ -63,8 +105,9 @@ export class TwelveDataProvider implements ETFDataProvider {
   async getProviderStatus(): Promise<ProviderStatus> {
     return {
       mode: "live",
-      label: "Twelve Data · live/historical prices",
+      label: "Twelve Data · live quote + historical prices",
       provider: "twelve-data",
+      currentQuote: true,
       historicalPrices: true,
       metadata: false,
       holdings: false,
