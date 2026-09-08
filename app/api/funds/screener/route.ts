@@ -18,11 +18,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { universe, businessQuantError } = await getCachedFundUniverse();
+    const { universe, businessQuantError, twelveDataError } = await getCachedFundUniverse();
     if (!universe) {
+      const reasons = [
+        businessQuantError ? `BusinessQuant: ${businessQuantError.message}` : null,
+        twelveDataError ? `Twelve Data: ${twelveDataError.message}` : null,
+      ].filter(Boolean);
       return NextResponse.json({
         mode: "fallback",
-        reason: businessQuantError?.message ?? "No ETF universe provider is currently available",
+        reason: reasons.length ? reasons.join(" | ") : "No ETF universe provider is currently available",
+        providerErrors: {
+          businessQuant: businessQuantError?.message ?? null,
+          twelveData: twelveDataError?.message ?? null,
+        },
         rows: [], offset, limit,
       });
     }
@@ -37,6 +45,10 @@ export async function GET(request: NextRequest) {
       source: universe.source,
       enriched: universe.enriched,
       providerWarning: businessQuantError?.message,
+      providerErrors: {
+        businessQuant: businessQuantError?.message ?? null,
+        twelveData: twelveDataError?.message ?? null,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Screener unavailable";
