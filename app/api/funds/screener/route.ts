@@ -8,13 +8,32 @@ export async function GET(request: NextRequest) {
   const dirParam = searchParams.get("dir");
   const sortDir = dirParam === "asc" ? "asc" : "desc";
   const category = searchParams.get("category") ?? undefined;
-  const limit = Math.min(Number(searchParams.get("limit") ?? 50) || 50, 100);
+  const limit = Math.min(Math.max(Number(searchParams.get("limit") ?? 100) || 100, 1), 500);
+  const offset = Math.max(Number(searchParams.get("offset") ?? 0) || 0, 0);
+
+  if (!process.env.BUSINESSQUANT_API_KEY?.trim()) {
+    return NextResponse.json({
+      mode: "demo",
+      reason: "BUSINESSQUANT_API_KEY is missing from .env.local",
+      rows: [],
+      offset,
+      limit,
+    });
+  }
 
   try {
-    const result = await screenBusinessQuantFunds({ search, sort, sortDir, category, limit });
-    if (!result) return NextResponse.json({ mode: "demo", reason: "BUSINESSQUANT_API_KEY not configured", rows: [] });
+    const result = await screenBusinessQuantFunds({ search, sort, sortDir, category, limit, offset });
+    if (!result) {
+      return NextResponse.json({ mode: "fallback", error: "BusinessQuant provider returned no response", rows: [], offset, limit });
+    }
     return NextResponse.json({ mode: "live", ...result });
   } catch (error) {
-    return NextResponse.json({ mode: "fallback", error: error instanceof Error ? error.message : "Screener unavailable", rows: [] }, { status: 200 });
+    return NextResponse.json({
+      mode: "fallback",
+      error: error instanceof Error ? error.message : "Screener unavailable",
+      rows: [],
+      offset,
+      limit,
+    }, { status: 200 });
   }
 }
