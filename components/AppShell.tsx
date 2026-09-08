@@ -9,6 +9,7 @@ const nav = [
   ["ETF Explorer", "/explore", "◫"],
   ["Sectors", "/sectors", "◈"],
   ["Compare", "/compare", "⇄"],
+  ["Watchlist", "/watchlist", "☆"],
   ["Insights", "/insights", "✦"],
 ];
 
@@ -22,9 +23,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
       <div className="navLabel">DISCOVER</div>
       <div className="navItem muted"><span>◌</span>Themes <i>Soon</i></div>
       <div className="navItem muted"><span>↗</span>Fund Flows <i>Soon</i></div>
-      <div className="navItem muted"><span>☆</span>Watchlist <i>Soon</i></div>
-      <div className="sideCard"><span className="eyebrow">DATA STATUS</span><div className="statusLine"><i />Demo dataset online</div><small>Provider layer prepared for licensed live ETF data.</small></div>
+      <div className="sideCard"><span className="eyebrow">DATA STATUS</span><div className="statusLine"><i />Hybrid provider architecture</div><small>Live APIs are used when configured, with explicit curated/demo fallbacks.</small></div>
     </aside>
-    <section className="workspace">{children}<footer>ETF Pulse · Demo analytics only · Not investment advice</footer></section>
+    <section className="workspace">{children}<footer>ETF Pulse · Hybrid market data · Not investment advice</footer></section>
   </main>;
 }
