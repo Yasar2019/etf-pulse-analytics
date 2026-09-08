@@ -25,12 +25,32 @@ The current prototype includes:
 - `/insights` — Market intelligence
 - `/etf/[symbol]` — ETF detail
 
-## Development
+## Run the real website locally on Windows
+
+### Easiest way
+
+Clone the repository, open PowerShell inside the project folder, then run:
+
+```powershell
+./run-local.ps1
+```
+
+The script installs dependencies when needed, opens your browser, and starts the real Next.js development server at:
+
+```text
+http://localhost:3000
+```
+
+### Manual way
 
 ```bash
 npm install
 npm run dev
 ```
+
+Then open `http://localhost:3000`.
+
+Node.js LTS is required.
 
 ## Data status
 
