@@ -45,7 +45,8 @@ const profiles: Record<string, number[]> = {
 };
 
 export function getPerformanceSeries(symbol: string): SeriesPoint[] {
-  const values = profiles[symbol] ?? profiles.VOO;
+  const values = profiles[symbol.toUpperCase()];
+  if (!values) return [];
   const labels = ["Dec","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep"];
   return values.map((value, i) => ({ label: labels[i], value }));
 }
