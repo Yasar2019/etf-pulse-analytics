@@ -32,11 +32,7 @@ const loadTwelveDataDirectory = unstable_cache(
   async (): Promise<CachedFundUniverse | null> => {
     const directory = await getTwelveDataETFDirectory();
     if (!directory) return null;
-    const rows: FundScreenRow[] = directory.map((r) => ({
-      ticker: r.ticker,
-      fundName: r.fundName,
-      category: r.category,
-    }));
+    const rows: FundScreenRow[] = directory.map((r) => ({ ticker: r.ticker, fundName: r.fundName, category: r.category }));
     return {
       rows,
       providerUniverseTotal: rows.length,
@@ -46,31 +42,32 @@ const loadTwelveDataDirectory = unstable_cache(
       enriched: false,
     };
   },
-  ["twelve-data-etf-directory-v1"],
+  ["twelve-data-etf-directory-v2"],
   { revalidate: 86400, tags: ["twelve-data-etf-universe"] },
 );
 
 export async function getCachedFundUniverse() {
   let businessQuantError: Error | null = null;
+  let twelveDataError: Error | null = null;
+
   try {
     const enriched = await loadBusinessQuantSnapshot();
-    if (enriched?.rows.length) return { universe: enriched, businessQuantError };
+    if (enriched?.rows.length) return { universe: enriched, businessQuantError, twelveDataError };
   } catch (error) {
     businessQuantError = error instanceof Error ? error : new Error("BusinessQuant universe unavailable");
   }
 
   try {
     const directory = await loadTwelveDataDirectory();
-    if (directory?.rows.length) return { universe: directory, businessQuantError };
-  } catch {}
+    if (directory?.rows.length) return { universe: directory, businessQuantError, twelveDataError };
+  } catch (error) {
+    twelveDataError = error instanceof Error ? error : new Error("Twelve Data ETF directory unavailable");
+  }
 
-  return { universe: null, businessQuantError };
+  return { universe: null, businessQuantError, twelveDataError };
 }
 
-export function queryCachedUniverse(
-  universe: CachedFundUniverse,
-  options: { search?: string; sort?: string; sortDir?: "asc" | "desc"; offset?: number; limit?: number },
-) {
+export function queryCachedUniverse(universe: CachedFundUniverse, options: { search?: string; sort?: string; sortDir?: "asc" | "desc"; offset?: number; limit?: number }) {
   const search = options.search?.trim().toLowerCase();
   let rows = search
     ? universe.rows.filter((r) => `${r.ticker} ${r.fundName} ${r.category ?? ""} ${r.topSector ?? ""}`.toLowerCase().includes(search))
