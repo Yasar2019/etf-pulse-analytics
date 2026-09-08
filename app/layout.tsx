@@ -4,10 +4,11 @@ import "./v03.css";
 import "./v04.css";
 import "./v05.css";
 import "./v06.css";
+import "./v07.css";
 
 export const metadata: Metadata = {
   title: "ETF Pulse — Market Intelligence",
-  description: "A modern ETF analytics dashboard for sectors, asset classes, themes, flows and fund discovery."
+  description: "A modern ETF analytics dashboard for sectors, asset classes, themes, flows, fund discovery and portfolio analysis."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
