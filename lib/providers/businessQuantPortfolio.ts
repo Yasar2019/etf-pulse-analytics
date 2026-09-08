@@ -93,6 +93,8 @@ export type PortfolioHolding = {
   issuer?: string;
   weightPct: number;
   sector?: string;
+  country?: string;
+  assetClass?: string;
 };
 
 export async function getBusinessQuantHoldings(symbol: string, limit = 1000): Promise<PortfolioHolding[] | null> {
@@ -108,6 +110,8 @@ export async function getBusinessQuantHoldings(symbol: string, limit = 1000): Pr
       issuer,
       weightPct: Number(r.weight_pct ?? 0),
       sector: r.sector ? String(r.sector) : undefined,
+      country: r.country_name ? String(r.country_name) : undefined,
+      assetClass: r.asset_class ? String(r.asset_class) : undefined,
     } as PortfolioHolding;
   }).filter((r: PortfolioHolding) => Number.isFinite(r.weightPct) && r.weightPct !== 0);
   return rows.length ? rows : null;
