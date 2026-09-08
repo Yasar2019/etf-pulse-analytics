@@ -32,6 +32,9 @@ export type FundScreenResult = {
   rows: FundScreenRow[];
   totalMatched: number;
   universeTotal: number;
+  returned: number;
+  offset: number;
+  limit: number;
   source: "businessquant";
 };
 
@@ -78,7 +81,11 @@ function key() {
 }
 
 async function readJson(response: Response): Promise<BusinessQuantResponse> {
-  if (!response.ok) throw new Error(`BusinessQuant request failed with ${response.status}`);
+  if (!response.ok) {
+    let detail = "";
+    try { detail = JSON.stringify(await response.json()); } catch {}
+    throw new Error(`BusinessQuant request failed with ${response.status}${detail ? ` · ${detail.slice(0,240)}` : ""}`);
+  }
   const payload = (await response.json()) as BusinessQuantResponse;
   if (payload.error) throw new Error(String(payload.error));
   return payload;
@@ -105,34 +112,43 @@ export async function getBusinessQuantFundFlows(symbol: string): Promise<FundFlo
   };
 }
 
-export async function screenBusinessQuantFunds(options?: { search?: string; limit?: number; sort?: string; sortDir?: "asc"|"desc"; category?: string }): Promise<FundScreenResult | null> {
+export async function screenBusinessQuantFunds(options?: { search?: string; limit?: number; offset?: number; sort?: string; sortDir?: "asc"|"desc"; category?: string }): Promise<FundScreenResult | null> {
   const apiKey = key();
   if (!apiKey) return null;
   const filters: Array<Record<string, unknown>> = [{ field: "vehicle", op: "eq", value: "ETF" }];
   if (options?.category) filters.push({ field: "category", op: "eq", value: options.category });
+  const requestedLimit = Math.min(Math.max(options?.limit ?? 100, 1), 500);
+  const requestedOffset = Math.max(options?.offset ?? 0, 0);
   const body: Record<string, unknown> = {
     filters,
     fields: ["category","net_expense_ratio_pct","net_assets_usd","return_1y_pct","net_flow_12m_usd","holdings_count","top_sector","top_sector_pct"],
     sort: [{ field: options?.sort || "net_assets_usd", dir: options?.sortDir || "desc" }],
-    limit: Math.min(options?.limit ?? 40, 100),
+    limit: requestedLimit,
+    offset: requestedOffset,
   };
   if (options?.search?.trim()) body.search = options.search.trim().slice(0, 120);
   const response = await fetch(`${BASE_URL}/funds/screener?api_key=${encodeURIComponent(apiKey)}`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), next: { revalidate: 900 },
   });
   const payload = await readJson(response);
+  const rows = (payload.data ?? []).map(r => ({
+    ticker: String(r.ticker ?? ""), fundName: String(r.fund_name ?? r.className ?? "Unnamed fund"), category: r.category ? String(r.category) : undefined,
+    expenseRatioPct: Number.isFinite(Number(r.net_expense_ratio_pct)) ? Number(r.net_expense_ratio_pct) : undefined,
+    netAssetsUsd: Number.isFinite(Number(r.net_assets_usd)) ? Number(r.net_assets_usd) : undefined,
+    return1yPct: Number.isFinite(Number(r.return_1y_pct)) ? Number(r.return_1y_pct) : undefined,
+    netFlow12mUsd: Number.isFinite(Number(r.net_flow_12m_usd)) ? Number(r.net_flow_12m_usd) : undefined,
+    holdingsCount: Number.isFinite(Number(r.holdings_count)) ? Number(r.holdings_count) : undefined,
+    topSector: r.top_sector ? String(r.top_sector) : undefined,
+    topSectorPct: Number.isFinite(Number(r.top_sector_pct)) ? Number(r.top_sector_pct) : undefined,
+  })).filter(r => r.ticker);
   return {
-    rows: (payload.data ?? []).map(r => ({
-      ticker: String(r.ticker ?? ""), fundName: String(r.fund_name ?? r.className ?? "Unnamed fund"), category: r.category ? String(r.category) : undefined,
-      expenseRatioPct: Number.isFinite(Number(r.net_expense_ratio_pct)) ? Number(r.net_expense_ratio_pct) : undefined,
-      netAssetsUsd: Number.isFinite(Number(r.net_assets_usd)) ? Number(r.net_assets_usd) : undefined,
-      return1yPct: Number.isFinite(Number(r.return_1y_pct)) ? Number(r.return_1y_pct) : undefined,
-      netFlow12mUsd: Number.isFinite(Number(r.net_flow_12m_usd)) ? Number(r.net_flow_12m_usd) : undefined,
-      holdingsCount: Number.isFinite(Number(r.holdings_count)) ? Number(r.holdings_count) : undefined,
-      topSector: r.top_sector ? String(r.top_sector) : undefined,
-      topSectorPct: Number.isFinite(Number(r.top_sector_pct)) ? Number(r.top_sector_pct) : undefined,
-    })).filter(r => r.ticker),
-    totalMatched: Number(payload.metadata?.total_matched ?? 0), universeTotal: Number(payload.metadata?.universe_total ?? 0), source: "businessquant",
+    rows,
+    totalMatched: Number(payload.metadata?.total_matched ?? rows.length),
+    universeTotal: Number(payload.metadata?.universe_total ?? 0),
+    returned: Number(payload.metadata?.returned ?? rows.length),
+    offset: Number(payload.metadata?.offset ?? requestedOffset),
+    limit: Number(payload.metadata?.limit ?? requestedLimit),
+    source: "businessquant",
   };
 }
 
