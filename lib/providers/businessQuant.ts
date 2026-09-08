@@ -105,7 +105,7 @@ export async function getBusinessQuantFundFlows(symbol: string): Promise<FundFlo
   };
 }
 
-export async function screenBusinessQuantFunds(options?: { search?: string; limit?: number; sort?: string; category?: string }): Promise<FundScreenResult | null> {
+export async function screenBusinessQuantFunds(options?: { search?: string; limit?: number; sort?: string; sortDir?: "asc"|"desc"; category?: string }): Promise<FundScreenResult | null> {
   const apiKey = key();
   if (!apiKey) return null;
   const filters: Array<Record<string, unknown>> = [{ field: "vehicle", op: "eq", value: "ETF" }];
@@ -113,7 +113,7 @@ export async function screenBusinessQuantFunds(options?: { search?: string; limi
   const body: Record<string, unknown> = {
     filters,
     fields: ["category","net_expense_ratio_pct","net_assets_usd","return_1y_pct","net_flow_12m_usd","holdings_count","top_sector","top_sector_pct"],
-    sort: [{ field: options?.sort || "net_assets_usd", dir: "desc" }],
+    sort: [{ field: options?.sort || "net_assets_usd", dir: options?.sortDir || "desc" }],
     limit: Math.min(options?.limit ?? 40, 100),
   };
   if (options?.search?.trim()) body.search = options.search.trim().slice(0, 120);
