@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./v03.css";
 import "./v04.css";
+import "./v05.css";
 
 export const metadata: Metadata = {
   title: "ETF Pulse — Market Intelligence",
